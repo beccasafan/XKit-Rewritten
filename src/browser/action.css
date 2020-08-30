@@ -65,8 +65,49 @@ section h2 {
   text-align: center;
 }
 
-.script + .script {
-  border-top: 1px dotted #444444;
+.finder {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  padding: 1ch;
+  border-bottom: 1px solid #cccccc;
+}
+
+.finder div {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.finder div:first-child {
+  flex-grow: 1;
+}
+
+.finder div + div {
+  margin-left: 1ch;
+}
+
+#search {
+  width: 175px;
+  min-width: calc(100% - 16px);
+}
+
+.no-results {
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+.script.search-hidden,
+.script.filter-hidden {
+  display: none;
+}
+
+.script:not(:last-child) {
+  border-bottom: 1px dotted #444444;
 }
 
 .script summary {
@@ -80,6 +121,10 @@ section h2 {
 
 .script summary::-webkit-details-marker {
   display: none;
+}
+
+.script.disabled summary {
+  color: #444444;
 }
 
 .script:hover:not([open]) summary {
@@ -108,6 +153,12 @@ section h2 {
 .script .title,
 .script .description {
   margin: 0;
+}
+
+.script.disabled .title::after {
+  content: "(disabled)";
+  margin-left: 0.5ch;
+  font-weight: normal;
 }
 
 .script ul {

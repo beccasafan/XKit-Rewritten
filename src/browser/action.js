@@ -10,12 +10,15 @@ const getInstalledScripts = async function() {
 
 const writeEnabled = async function(event) {
   const {checked, id} = event.target;
+  const {parentNode: {parentNode: {parentNode: detailsElement}}} = event.target;
   let {enabledScripts = []} = await browser.storage.local.get('enabledScripts');
 
   if (checked) {
     enabledScripts.push(id);
+    detailsElement.classList.remove('disabled');
   } else {
     enabledScripts = enabledScripts.filter(x => x !== id);
+    detailsElement.classList.add('disabled');
   }
 
   browser.storage.local.set({enabledScripts});
@@ -44,7 +47,7 @@ const writePreference = async function(event) {
 };
 
 const renderScripts = async function() {
-  const scriptsSection = document.getElementById('scripts');
+  const configSection = document.getElementById('configuration');
   const installedScripts = await getInstalledScripts();
   const {enabledScripts = []} = await browser.storage.local.get('enabledScripts');
 
@@ -54,6 +57,11 @@ const renderScripts = async function() {
     const {title = name, description = '', icon = {}, preferences = {}} = await file.json();
 
     const scriptTemplateClone = document.getElementById('script').content.cloneNode(true);
+
+    if (enabledScripts.includes(name) === false) {
+      const detailsElement = scriptTemplateClone.querySelector('details.script');
+      detailsElement.classList.add('disabled');
+    }
 
     if (icon.class_name !== undefined) {
       const iconDiv = scriptTemplateClone.querySelector('div.icon');
@@ -126,10 +134,10 @@ const renderScripts = async function() {
       unorderedList.appendChild(preferenceTemplateClone);
     }
 
-    scriptsSection.appendChild(scriptTemplateClone);
+    configSection.appendChild(scriptTemplateClone);
   }
 
-  const $makeSpectrum = $(scriptsSection).find('.makeSpectrum');
+  const $makeSpectrum = $(configSection).find('.makeSpectrum');
 
   $makeSpectrum.spectrum({
     preferredFormat: 'hex',
@@ -140,6 +148,14 @@ const renderScripts = async function() {
   $makeSpectrum.on('change.spectrum', writePreference);
 };
 
+const checkForNoResults = function() {
+  const nothingFound =
+    [...document.querySelectorAll('details.script')]
+    .every(detailsElement => detailsElement.classList.contains('search-hidden') || detailsElement.classList.contains('filter-hidden'));
+
+  document.querySelector('.no-results').style.display = nothingFound ? 'flex' : 'none';
+};
+
 $('nav a').click(event => {
   event.preventDefault();
   $('nav .selected').removeClass('selected');
@@ -148,4 +164,42 @@ $('nav a').click(event => {
   $(`section${event.target.getAttribute('href')}`).addClass('open');
 });
 
+document.getElementById('search').addEventListener('input', event => {
+  const query = event.target.value.toLowerCase();
+
+  [...document.querySelectorAll('details.script')]
+  .forEach(detailsElement => {
+    if (detailsElement.textContent.toLowerCase().includes(query)) {
+      detailsElement.classList.remove('search-hidden');
+    } else {
+      detailsElement.classList.add('search-hidden');
+    }
+  });
+
+  checkForNoResults();
+});
+
+document.getElementById('filter').addEventListener('input', event => {
+  switch (event.target.value) {
+    case 'all':
+      $('.script.filter-hidden').removeClass('filter-hidden');
+      break;
+    case 'enabled':
+      $('.script.disabled').addClass('filter-hidden');
+      $('.script:not(.disabled)').removeClass('filter-hidden');
+      break;
+    case 'disabled':
+      $('.script:not(.disabled)').addClass('filter-hidden');
+      $('.script.disabled').removeClass('filter-hidden');
+      break;
+  }
+
+  $('.script[open].filter-hidden').removeAttr('open');
+
+  checkForNoResults();
+});
+
 renderScripts();
+
+const main = document.querySelector('main');
+main.style.minWidth = `${main.getBoundingClientRect().width}px`;
